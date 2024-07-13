@@ -65,8 +65,8 @@ export default function Form() {
   };
 
   const onChange = (evt) => {
-    const { type, id, value, checked } = evt.target;
-
+    const { type, name, id, value, checked } = evt.target;
+    console.log({type: type, name: name, id: id, value: value, checked: checked})
     if (type === "checkbox") {
       // If the checkbox is checked, add the value to the toppings array
       // If the checkbox is unchecked, remove the value from the toppings array
@@ -83,8 +83,8 @@ export default function Form() {
 
       // or as a one-liner
       const currentToppings = checked
-        ? [...values.toppings, value]
-        : values.toppings.filter((topping) => topping !== value);
+        ? [...values.toppings, name]
+        : values.toppings.filter((topping) => topping !== name);
 
       setValues({ ...values, toppings: currentToppings });
 
@@ -96,7 +96,7 @@ export default function Form() {
 
   const onSubmit = (evt) => {
     evt.preventDefault();
-    // TODO send form to server, catch errors
+
     axios
       .post("http://localhost:9009/api/order", values)
       .then((res) => {

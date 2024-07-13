@@ -1,63 +1,231 @@
 import React from 'react'
-import { render, screen } from '@testing-library/react'
+import App from './frontend/components/App'
+import { BrowserRouter as Router } from 'react-router-dom'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom'
+import server from './backend/mock-server'
 
-describe('Sprint 7 Challenge Learner Tests', () => {
-  /*
-  👉 TASK 1 - Unit Testing of sum function at the bottom of this module
+jest.setTimeout(750) // default 5000 too long for Codegrade
 
-  Test the following. You can create separate tests or a single test with multiple assertions.
+const waitForOptions = { timeout: 250 }
+const queryOptions = { exact: false }
 
-    [1] sum() // throws an error 'pass valid numbers'
-    [2] sum(2, 'seven') // throws an error 'pass valid numbers'
-    [3] sum(1, 3) // returns 4
-    [4] sum('1', 2) // returns 3
-    [5] sum('10', '3') // returns 13
-  */
+const renderApp = ui => {
+  window.localStorage.clear()
+  window.history.pushState({}, 'Test page', '/')
+  return render(ui)
+}
 
-  /*
-  👉 TASK 2 - Integration Testing of HelloWorld component at the bottom of this module
+beforeAll(() => { server.listen() })
+afterAll(() => { server.close() })
+beforeEach(() => { renderApp(<Router><App /></Router>) })
+afterEach(() => { server.resetHandlers() })
 
-  Test the <HelloWorld /> component found below...
-    - using `screen.queryByText` to capture nodes
-    - using `toBeInTheDocument` to assert their existence in the DOM
+describe('Sprint 7 Challenge Codegrade Tests', () => {
+  describe('App routing', () => {
+    test('[1] <App /> Renders without crashing', () => {
+      // screen.debug()
+    })
+    test('[2] The <a>Home</a> and <a>Order</a> links navigate to "/" and "/order"', () => {
+      expect(document.location.pathname).toBe('/')
+      fireEvent.click(screen.getByText('Order', queryOptions))
+      expect(document.location.pathname).toBe('/order')
+      fireEvent.click(screen.getByText('Home', queryOptions))
+      expect(document.location.pathname).toBe('/')
+    })
+    test('[3] Renders the <Home /> component on path "/"', () => {
+      screen.getByText('Welcome to Bloom Pizza', queryOptions)
+    })
+    test('[4] Renders the <Form /> component on path "/order"', () => {
+      fireEvent.click(screen.getByText('Order', queryOptions))
+      screen.getByText('Order Your Pizza', queryOptions)
+    })
+    test('[5] Clicking on the pizza image navigates to "/order"', () => {
+      fireEvent.click(screen.getByAltText('order-pizza'))
+      expect(document.location.pathname).toBe('/order')
+    })
+  })
+  let name, size, pepperoni, peppers, pineapple, mushrooms, ham, submit
+  function getFormElements() {
+    name = document.querySelector('#fullName')
+    size = document.querySelector('#size')
+    pepperoni = document.querySelectorAll('input[type=checkbox]')[0]
+    peppers = document.querySelectorAll('input[type=checkbox]')[1]
+    pineapple = document.querySelectorAll('input[type=checkbox]')[2]
+    mushrooms = document.querySelectorAll('input[type=checkbox]')[3]
+    ham = document.querySelectorAll('input[type=checkbox]')[4]
+    submit = document.querySelector('input[type=submit]')
+  }
+  function getValues() { // eslint-disable-line
+    return {
+      name: name.value,
+      size: size.value,
+      pepperoni: pepperoni.checked,
+      peppers: peppers.checked,
+      pineapple: pineapple.checked,
+      mushrooms: mushrooms.checked,
+      ham: ham.checked,
+      submitDisabled: submit.disabled,
+    }
+  }
+  describe('Form submission success', () => {
+    beforeEach(() => {
+      fireEvent.click(screen.getByText('Order', queryOptions))
+      getFormElements()
+    })
+    test('[6] Successful order with no toppings renders correct message', async () => {
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: 'Mollusk' } })
+        fireEvent.change(size, { target: { value: 'L' } })
+      }, waitForOptions)
+      await waitFor(() => expect(submit).toBeEnabled())
+      await waitFor(() => {
+        fireEvent.click(submit)
+      }, waitForOptions)
+      await waitFor(() => {
+        screen.getByText('Thank you for your order, Mollusk!', queryOptions)
+        screen.getByText('Your large pizza', queryOptions)
+        screen.getByText('with no toppings', queryOptions)
+      }, waitForOptions)
+    })
+    test('[7] Successful order with some toppings renders correct message', async () => {
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: 'Fish' } })
+        fireEvent.change(size, { target: { value: 'S' } })
+        fireEvent.click(pepperoni)
+        fireEvent.click(pineapple)
+        fireEvent.click(ham)
+      }, waitForOptions)
+      await waitFor(() => expect(submit).toBeEnabled())
+      await waitFor(() => {
+        fireEvent.click(submit)
+      }, waitForOptions)
+      await waitFor(() => {
+        screen.getByText('Thank you for your order, Fish!', queryOptions)
+        screen.getByText('Your small pizza', queryOptions)
+        screen.getByText('with 3 toppings', queryOptions)
+      }, waitForOptions)
+    })
+    test('[8] A successful order clears the form', async () => {
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: 'Fish' } })
+        fireEvent.change(size, { target: { value: 'S' } })
+      }, waitForOptions)
+      await waitFor(() => expect(submit).toBeEnabled())
+      await waitFor(() => {
+        fireEvent.click(submit)
+      }, waitForOptions)
+      await waitFor(() => {
+        screen.getByText('Thank you', queryOptions)
+      }, waitForOptions)
+      await waitFor(() => {
+        expect(name.value).toBeFalsy()
+        expect(size.value).toBeFalsy()
+        expect(pepperoni.checked).toBeFalsy()
+        expect(peppers.checked).toBeFalsy()
+        expect(pineapple.checked).toBeFalsy()
+        expect(mushrooms.checked).toBeFalsy()
+        expect(ham.checked).toBeFalsy()
+      })
+    })
+  })
+  describe('Form validation', () => {
+    beforeEach(() => {
+      fireEvent.click(screen.getByText('Order', queryOptions))
+      getFormElements()
+    })
+    test('[9] Submit only enables if `fullName` and `size` pass validation', async () => {
+      expect(submit).toBeDisabled() // initial state
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: '123' } })
+        fireEvent.change(size, { target: { value: 'S' } })
+      }, waitForOptions)
+      await waitFor(() => expect(submit).toBeEnabled())
 
-    [1] renders a link that reads "Home"
-    [2] renders a link that reads "About"
-    [3] renders a link that reads "Blog"
-    [4] renders a text that reads "The Truth"
-    [5] renders a text that reads "JavaScript is pretty awesome"
-    [6] renders a text that includes "javaScript is pretty" (use exact = false)
-  */
-  test('you can comment out this test', () => {
-    expect(true).toBe(true)
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: '12' } }) // BAD VALUE
+        fireEvent.change(size, { target: { value: 'S' } })
+      }, waitForOptions)
+      await waitFor(() => expect(submit).toBeDisabled())
+
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: '123' } })
+        fireEvent.change(size, { target: { value: 'M' } })
+      }, waitForOptions)
+      await waitFor(() => expect(submit).toBeEnabled())
+
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: '123' } })
+        fireEvent.change(size, { target: { value: 'X' } }) // BAD VALUE
+      }, waitForOptions)
+      await waitFor(() => expect(submit).toBeDisabled())
+
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: '123' } })
+        fireEvent.change(size, { target: { value: 'L' } })
+      }, waitForOptions)
+      await waitFor(() => expect(submit).toBeEnabled())
+    })
+    test('[10] Validation of `fullName` renders correct error message', async () => {
+      const validationError = 'full name must be at least 3 characters'
+
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: '1' } }) // BAD VALUE
+      }, waitForOptions)
+      await waitFor(() => screen.getByText(validationError, queryOptions))
+
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: '123' } })
+      }, waitForOptions)
+      await waitFor(() => {
+        expect(screen.queryByText(validationError, queryOptions)).not.toBeInTheDocument()
+      }, waitForOptions)
+
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: '  12  ' } }) // BAD VALUE (trying to fool validation with whitespace)
+      }, waitForOptions)
+      await waitFor(() => screen.getByText(validationError, queryOptions))
+
+      await waitFor(() => {
+        fireEvent.change(name, { target: { value: '1234' } })
+      }, waitForOptions)
+      await waitFor(() => {
+        expect(screen.queryByText(validationError, queryOptions)).not.toBeInTheDocument()
+      }, waitForOptions)
+    })
+    test('[11] Validation of `size` renders correct error message', async () => {
+      const validationError = 'size must be S or M or L'
+
+      await waitFor(() => {
+        fireEvent.change(size, { target: { value: 'S' } })
+      }, waitForOptions)
+      await waitFor(() => {
+        expect(screen.queryByText(validationError, queryOptions)).not.toBeInTheDocument()
+      }, waitForOptions)
+
+      await waitFor(() => {
+        fireEvent.change(size, { target: { value: '' } }) // BAD VALUE
+      }, waitForOptions)
+      await waitFor(() => screen.getByText(validationError, queryOptions))
+
+      await waitFor(() => {
+        fireEvent.change(size, { target: { value: 'M' } })
+      }, waitForOptions)
+      await waitFor(() => {
+        expect(screen.queryByText(validationError, queryOptions)).not.toBeInTheDocument()
+      }, waitForOptions)
+
+      await waitFor(() => {
+        fireEvent.change(size, { target: { value: 'X' } }) // BAD VALUE
+      }, waitForOptions)
+      await waitFor(() => screen.getByText(validationError, queryOptions))
+
+      await waitFor(() => {
+        fireEvent.change(size, { target: { value: 'L' } })
+      }, waitForOptions)
+      await waitFor(() => {
+        expect(screen.queryByText(validationError, queryOptions)).not.toBeInTheDocument()
+      }, waitForOptions)
+    })
   })
 })
-
-function sum(a, b) {
-  a = Number(a)
-  b = Number(b)
-  if (isNaN(a) || isNaN(b)) {
-    throw new Error('pass valid numbers')
-  }
-  return a + b
-}
-
-function HelloWorld() {
-  return (
-    <div>
-      <h1>Hello World Component</h1>
-      <nav>
-        <a href='#'>Home</a>
-        <a href='#'>About</a>
-        <a href='#'>Blog</a>
-      </nav>
-      <main>
-        <section>
-          <h2>The Truth</h2>
-          <p>JavaScript is pretty awesome</p>
-        </section>
-      </main>
-    </div>
-  )
-}

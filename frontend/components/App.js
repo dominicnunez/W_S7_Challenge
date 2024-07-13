@@ -5,16 +5,16 @@ import { NavLink, Routes, Route } from "react-router-dom";
 
 function App() {
   const getActiveProps = ({ isActive }) => ({
-    className: isActive ? "active" : "", "aria-current": isActive ? "page" : undefined,
+    className: isActive ? "active" : undefined, "aria-current": isActive ? "page" : undefined,
   });
 
   return (
     <div id="app">
       <nav>
-        <NavLink to="/" getActiveProps={getActiveProps}>
+        <NavLink to="/" className={getActiveProps}>
           Home
         </NavLink>
-        <NavLink to="/order" getActiveProps={getActiveProps}>
+        <NavLink to="/order" className={getActiveProps}>
           Order
         </NavLink>
       </nav>
