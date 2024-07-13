@@ -159,7 +159,6 @@ export default function Form() {
           <label key={idx}>
             <input
               name={topping.id}
-              value={topping.id}
               type="checkbox"
               onChange={onChange}
               checked={values.toppings.includes(topping.id)}
@@ -170,7 +169,7 @@ export default function Form() {
         ))}
       </div>
       {/* 👇 Make sure the submit stays disabled until the form validates! */}
-      <input type="submit" disabled={submitDisabled} />
+      <input disabled={submitDisabled} type="submit" />
     </form>
   );
 }

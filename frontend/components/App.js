@@ -2,34 +2,26 @@ import React from "react";
 import Home from "./Home";
 import Form from "./Form";
 import { NavLink, Routes, Route } from "react-router-dom";
-import { useState } from "react";
 
 function App() {
-  // const [activePath, setActivePath] = useState("Home");
+  const getActiveProps = ({ isActive }) => ({
+    className: isActive ? "active" : "", "aria-current": isActive ? "page" : undefined,
+  });
 
   return (
     <div id="app">
       <nav>
-        <NavLink
-          to="/"
-          className={({ isActive }) => (isActive ? "active" : "")}
-        >
+        <NavLink to="/" getActiveProps={getActiveProps}>
           Home
         </NavLink>
-        <NavLink
-          to="/order"
-          className={({ isActive }) => (isActive ? "active" : "")}
-        >
+        <NavLink to="/order" getActiveProps={getActiveProps}>
           Order
         </NavLink>
       </nav>
-      {/* Route and Routes here */}
       <Routes>
         <Route path="/" element={<Home />} />
-        <Route path="order" element={<Form />} />
+        <Route path="/order" element={<Form />} />
       </Routes>
-      {/* <Home /> */}
-      {/* <Form /> */}
     </div>
   );
 }
