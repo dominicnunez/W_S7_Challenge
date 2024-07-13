@@ -1,25 +1,37 @@
-import React from 'react'
-import Home from './Home'
-import Form from './Form'
-import { Link, Routes, Route } from 'react-router-dom'
+import React from "react";
+import Home from "./Home";
+import Form from "./Form";
+import { NavLink, Routes, Route } from "react-router-dom";
+import { useState } from "react";
 
 function App() {
+  // const [activePath, setActivePath] = useState("Home");
+
   return (
     <div id="app">
       <nav>
-        {/* NavLinks here */}
-        <Link to='/'>Home</Link>
-        <Link to='order'>Order</Link>
+        <NavLink
+          to="/"
+          className={({ isActive }) => (isActive ? "active" : "")}
+        >
+          Home
+        </NavLink>
+        <NavLink
+          to="/order"
+          className={({ isActive }) => (isActive ? "active" : "")}
+        >
+          Order
+        </NavLink>
       </nav>
       {/* Route and Routes here */}
       <Routes>
-        <Route path='/' element={<Home/>}/>
-        <Route path='order' element={<Form/>}/>
+        <Route path="/" element={<Home />} />
+        <Route path="order" element={<Form />} />
       </Routes>
       {/* <Home /> */}
       {/* <Form /> */}
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
